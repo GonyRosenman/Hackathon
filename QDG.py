@@ -32,7 +32,8 @@ class QDG():
                     CV - coefficient of variance as defined in the QDG paper.
         '''
         note_duration = {'total': []}
-        for index, row in self.midi_sample.iterrows():
+        trimmed = 0
+        for index,(_, row) in enumerate(self.midi_sample.iterrows()):
             if getattr(row, self.header_names[2]) != 1:
                 continue
             row_key = getattr(row, self.header_names[4])
@@ -51,13 +52,15 @@ class QDG():
                     release_time = getattr(next_row,self.header_names[6])
                     break
             if release_time is None:
-                print("couldn't locate corresponding release event...\nignoring press event")
+                trimmed += 1
                 continue
             duration = release_time - press_time
             note_duration['total'].append(duration.total_seconds())
         note_duration['mean'] = np.mean(note_duration['total'])
         note_duration['std'] = np.std(note_duration['total'])
         note_duration['CV'] = note_duration['std'] / note_duration['mean']
+        if trimmed != 0:
+            print('note: {} press events were not matched with release event'.format(trimmed))
         return note_duration
 
     def extract_press_velocity(self):
@@ -71,7 +74,7 @@ class QDG():
                     CV - coefficient of variance as defined in the QDG paper.
         '''
         press_velocity = {'total':[]}
-        for index, row in self.midi_sample.iterrows():
+        for _, row in self.midi_sample.iterrows():
             if getattr(row,self.header_names[2]) != 1:
                 continue
             press_velocity['total'].append(getattr(row,self.header_names[5]))
